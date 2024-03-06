@@ -1,0 +1,70 @@
+import telegram
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import logging
+
+# Configuração do token do bot
+TOKEN = 'seu_token_aqui'
+
+# Configuração do chat_id do administrador para receber notificações
+ADMIN_CHAT_ID = 'chat_id_do_administrador'
+
+# Configuração do catálogo de produtos (pode ser uma lista, banco de dados, etc.)
+catalogo_produtos = {
+    'produto1': {
+        'nome': 'Produto 1',
+        'preco': 10.0
+    },
+    'produto2': {
+        'nome': 'Produto 2',
+        'preco': 20.0
+    }
+}
+
+# Inicialização do bot
+bot = telegram.Bot(token=TOKEN)
+updater = Updater(token=TOKEN, use_context=True)
+dispatcher = updater.dispatcher
+
+# Configuração do logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+# Função para iniciar o bot
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Bem-vindo ao Bot de Vendas! Use /catalogo para ver nossos produtos.")
+
+# Função para mostrar o catálogo de produtos
+def catalogo(update, context):
+    message = "Nosso catálogo de produtos:\n"
+    for key, value in catalogo_produtos.items():
+        message += f"{value['nome']} - R${value['preco']}\n"
+    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+
+# Função para processar o pedido de um produto
+def pedido(update, context):
+    produto = context.args[0]
+    if produto in catalogo_produtos:
+        nome_produto = catalogo_produtos[produto]['nome']
+        preco_produto = catalogo_produtos[produto]['preco']
+        context.bot.send_message(chat_id=update.effective_chat.id, text=f"Você solicitou {nome_produto}. O preço é R${preco_produto}.")
+    else:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, esse produto não está disponível no momento.")
+
+# Função para lidar com mensagens não reconhecidas
+def unknown(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi esse comando.")
+
+# Definição dos handlers
+start_handler = CommandHandler('start', start)
+catalogo_handler = CommandHandler('catalogo', catalogo)
+pedido_handler = CommandHandler('pedido', pedido)
+unknown_handler = MessageHandler(Filters.command, unknown)
+
+# Registro dos handlers no dispatcher
+dispatcher.add_handler(start_handler)
+dispatcher.add_handler(catalogo_handler)
+dispatcher.add_handler(pedido_handler)
+dispatcher.add_handler(unknown_handler)
+
+# Iniciar o bot
+updater.start_polling()
+updater.idle()
